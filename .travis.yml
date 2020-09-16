@@ -6,7 +6,7 @@ install:
 # command to run tests
 script:
   - python manage.py migrate
-  - python manage.py test
+  - python manage.py test restaurant
 after-success:
   - echo $SSH_KEY > /tmp/key
   - ssh -i "/tmp/key" $DEPLOY_ACCOUNT@$DOMAIN_NAME $DEPLOY_COMMAND
