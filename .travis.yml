@@ -9,4 +9,4 @@ script:
   - python manage.py test
 after-success:
   - echo $SSH_KEY > /tmp/key
-  - ssh -i "/tmp/key" $DEPLOY@$DOMAIN_NAME $DEPLOY_COMMAND
+  - ssh -i "/tmp/key" $DEPLOY_ACCOUNT@$DOMAIN_NAME $DEPLOY_COMMAND
