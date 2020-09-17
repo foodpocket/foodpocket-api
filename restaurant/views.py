@@ -563,7 +563,8 @@ def getPocketList(request):
         return HttpResponse('Unauthorized, please login', status=401)
 
     pockets = Pocket.objects.annotate(Count('restaurant')).filter(owner=user) \
-        .exclude(status=Pocket.Status.DELETED)
+        .exclude(status=Pocket.Status.DELETED) \
+        .order_by('create_time')
 
     response['data'] = [
         {
