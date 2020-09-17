@@ -471,6 +471,22 @@ class AccountApiTestCase(TestCase):
             expire_time=timezone.now() + timezone.timedelta(days=1)
         )
 
+    def test_preprocess_username(self):
+        """
+            Unit test for preprocessUsername static function
+        """
+        validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321"
+
+        # TEST1
+        for i in range(0, 256):
+            before = chr(i)
+            after, ok, errorMsg = Account.preprocessUsername(before)
+            self.assertEqual(before in validChars, ok)
+
+        # TEST2
+        aftername, ok, errorMsg = Account.preprocessUsername("中文測試")
+        self.assertEqual(False, ok)
+
     def test_registry(self):
         """
             Basic test for registerAccount api
@@ -495,3 +511,61 @@ class AccountApiTestCase(TestCase):
         user = Account.objects.get(username=data['username'])
         self.assertTrue(check_password(data['password'], user.password))
         self.assertEqual(user.email, data['email'])
+
+    def test_registry_invalid_username(self):
+        """
+            Error test for registerAccount api with invalid username
+
+            @target: registerAccount
+        """
+        accountCount = Account.objects.all().count()
+        data = {
+            'username': 'hello',
+            'password': 'helloworld_and_tester',
+            'email': 'tester@test.com',
+        }
+
+        # TEST1
+        data['username'] = "xyz\"\'"
+        res = self.c.post('/api/rest/registerAccount/', data)
+        self.assertEqual(400, res.status_code)
+        self.assertEqual(accountCount, Account.objects.all().count())
+
+        # TEST2
+        data['username'] = "xyz "
+        res = self.c.post('/api/rest/registerAccount/', data)
+        self.assertEqual(400, res.status_code)
+        self.assertEqual(accountCount, Account.objects.all().count())
+
+        # TEST3
+        data['username'] = "!@#xyz"
+        res = self.c.post('/api/rest/registerAccount/', data)
+        self.assertEqual(400, res.status_code)
+        self.assertEqual(accountCount, Account.objects.all().count())
+
+        # TEST4
+        data['username'] = "123xyz"
+        res = self.c.post('/api/rest/registerAccount/', data)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(accountCount + 1, Account.objects.all().count())
+        accountCount += 1
+
+        # TEST5
+        data['username'] = "xyzXYZsdX123"
+        res = self.c.post('/api/rest/registerAccount/', data)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(accountCount + 1, Account.objects.all().count())
+        accountCount += 1
+
+    def test_login_account(self):
+        """
+            Basic test for loginAccount api
+        """
+
+        data = {
+            'username': tester_data["username"],
+            'password': tester_data["password"],
+        }
+
+        res = self.c.post('/api/rest/loginAccount/', data)
+        self.assertEqual(200, res.status_code)

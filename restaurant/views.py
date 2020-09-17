@@ -6,7 +6,7 @@ from datetime import date
 from uuid import UUID
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Count
-from .utils import check_email, timezone_to_string
+from .utils import check_email
 
 
 # should enable csrf at later time
@@ -18,7 +18,7 @@ def registerAccount(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
@@ -26,14 +26,19 @@ def registerAccount(request):
         password = request.POST['password']
         email = request.POST['email']
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # preprocess parameters
-    username = ''.join(x for x in username if x.isalnum())[
-        :64]  # only allow a-zA-Z0-9 and at most 64 chars
+
+    username, ok, errorMsg = Account.preprocessUsername(username)
+    if not ok:
+        return HttpResponse('Invalid request;' + errorMsg, status=400)
+
     password = make_password(password)  # one-way hash + salt
-    if check_email(email) is False:
-        return HttpResponse('Invalid request; Email is not valid', status=400)
+
+    ok, errorMsg = Account.validateEmail(email)
+    if not ok:
+        return HttpResponse('Invalid request;' + errorMsg, status=400)
 
     # create Account
     account = Account(
@@ -49,7 +54,7 @@ def registerAccount(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def loginAccount(request):
     """
         [POST] login an existed account
@@ -59,18 +64,19 @@ def loginAccount(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
         username = request.POST['username']
         password = request.POST['password']
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # preprocess parameters
-    username = ''.join(x for x in username if x.isalnum())[
-        :64]  # only allow a-zA-Z0-9 and at most 64 chars
+    username, ok, errorMsg = Account.preprocessUsername(username)
+    if not ok:
+        return HttpResponse('Invalid request;' + errorMsg, status=400)
 
     # query
     try:
@@ -103,14 +109,14 @@ def getRestaurantList(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'GET':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
         user_token = request.GET['user_token']
         pocket_uid = request.GET['pocket_uid']
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query
     try:
@@ -185,13 +191,13 @@ def getVisitRecords(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'GET':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
         user_token = request.GET['user_token']
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query
     try:
@@ -219,7 +225,7 @@ def getVisitRecords(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def newVisit(request):
     """
         [POST] Add new visit record
@@ -228,7 +234,7 @@ def newVisit(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
@@ -237,7 +243,7 @@ def newVisit(request):
         visit_date = request.POST.get('visit_date', '')
         score = int(request.POST.get('score', '3'))
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # preprocess parameters
     if (visit_date == ''):
@@ -274,7 +280,7 @@ def newVisit(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def editVisitRecord(request):
     """
         [POST] edit existed visit record
@@ -283,7 +289,7 @@ def editVisitRecord(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
@@ -292,7 +298,7 @@ def editVisitRecord(request):
         visit_date = request.POST['visit_date']
         score = int(request.POST.get('score', '3'))
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # preprocess parameters
     try:
@@ -324,7 +330,7 @@ def editVisitRecord(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def removeVisitRecord(request):
     """
         [POST] remove existed visit record
@@ -332,14 +338,14 @@ def removeVisitRecord(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
         user_token = request.POST['user_token']
         visitrecord_uid = UUID(request.POST['visitrecord_uid'], version=4)
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query foreign keys
     try:
@@ -363,7 +369,7 @@ def removeVisitRecord(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def newRestaurant(request):
     """
         [POST] Add new restaurant
@@ -373,7 +379,7 @@ def newRestaurant(request):
     response = {'result': '', 'data': ''}
 
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
@@ -385,7 +391,7 @@ def newRestaurant(request):
         address = request.POST.get('address', '')
         note = request.POST.get('note', '')
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # preprocess parameters
     rest_name = rest_name[:200]
@@ -428,7 +434,7 @@ def newRestaurant(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def editRestaurant(request):
     """
         [POST] edit existed restaurant
@@ -437,7 +443,7 @@ def editRestaurant(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
@@ -448,7 +454,7 @@ def editRestaurant(request):
         statusStr = request.POST.get('status', None)
         hide_until = request.POST.get('hide_until', None)
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query foreign keys
     try:
@@ -491,7 +497,7 @@ def editRestaurant(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def removeRestaurant(request):
     """
         [POST] remove existed restaurant
@@ -499,14 +505,14 @@ def removeRestaurant(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
         user_token = request.POST['user_token']
         restaurant_uid = UUID(request.POST['restaurant_uid'], version=4)
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query foreign keys
     try:
@@ -541,13 +547,13 @@ def getPocketList(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'GET':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
         user_token = request.GET['user_token']
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query
     try:
@@ -571,7 +577,7 @@ def getPocketList(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def newPocket(request):
     """
         [POST] Add new Pocket
@@ -581,7 +587,7 @@ def newPocket(request):
     response = {'result': '', 'data': ''}
 
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
@@ -590,7 +596,7 @@ def newPocket(request):
         # copy_restaurants = json.loads(request.POST.get('init_restaurants', '\{\}'))
         note = request.POST.get('note', '')
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # preprocess parameters
     name = name[:200]
@@ -617,7 +623,7 @@ def newPocket(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def editPocket(request):
     """
         [POST] edit existed Pocket (mainly for rename now)
@@ -626,7 +632,7 @@ def editPocket(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
@@ -636,7 +642,7 @@ def editPocket(request):
         note = request.POST.get('note', None)
         statusStr = request.POST.get('status', None)
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query foreign keys
     try:
@@ -674,7 +680,7 @@ def editPocket(request):
 
 
 # should enable csrf at later time
-@csrf_exempt
+@ csrf_exempt
 def removePocket(request):
     """
         [POST] remove existed Pocket
@@ -682,14 +688,14 @@ def removePocket(request):
     """
     response = {'result': '', 'data': ''}
     if request.method != 'POST':
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # collect parameters
     try:
         user_token = request.POST['user_token']
         pocket_uid = UUID(request.POST['pocket_uid'], version=4)
     except (KeyError, ValueError):
-        return HttpResponse('Invalid request; see documentation for correct parameters', status=400)
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # query foreign keys
     try:

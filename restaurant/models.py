@@ -5,6 +5,7 @@ import random
 import string
 from datetime import date
 from django.utils.translation import gettext_lazy as _
+import re
 
 
 # Create your models here.
@@ -27,6 +28,44 @@ class Account (models.Model):
 
     def __str__(self):
         return self.username
+
+    @staticmethod
+    def preprocessUsername(username: str) -> (str, bool, str):
+        """
+            validate and preprocess username inputed by user
+
+            return
+            1. processed username
+            2. is valid?
+            3. error message
+        """
+
+        # check length
+        if len(username) > 64:
+            return None, False, "Username length exceed 64 charactors"
+
+        # check chars, only allow a-zA-Z0-9
+        validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321"
+        for char in username:
+            if char not in validChars:
+                return None, False, "Username contains invalid charactor(s)"
+
+        # transfer all chars to lowercase
+        name = str.lower(username)
+
+        return name, True, ""
+
+    def validateEmail(email: str) -> (bool, str):
+        """
+            validate email inputed by user
+
+            return
+            1. is email valid?
+            2. error message
+        """
+        isValid = re.match(r'[^@]+@[^@]+\.[^@]+', email)
+        errorMsg = None if (isValid) else "Email format is invalid"
+        return isValid, errorMsg
 
 
 class TokenSystem (models.Model):
