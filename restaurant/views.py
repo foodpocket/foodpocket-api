@@ -104,9 +104,15 @@ def loginAccount(request):
             token=token,
             expire_time=timezone.now() + timezone.timedelta(days=1)
         )
+
+        # fetch userdata (configs)
+        last_pocket = user.pocket_set.order_by(
+            '-last_use_time', '-create_time').first()
+
         response['result'] = 'successful'
         response['data'] = {
             'token': token,
+            'last_pocket': last_pocket.brief()
         }
 
         user.last_login = timezone.now()
@@ -143,6 +149,10 @@ def getRestaurantList(request):
     try:
         pocket = Pocket.objects.exclude(status=Pocket.Status.DELETED) \
             .get(uid=pocket_uid, owner=user)
+
+        # update last use time
+        pocket.last_use_time = timezone.now()
+        pocket.save()
     except Pocket.DoesNotExist:
         return HttpResponse('Failed, Pocket not found', status=404)
 
@@ -589,9 +599,9 @@ def getPocketList(request):
 
     response['data'] = [
         {
-            'pocket_uid': pocket.uid,
-            'name': pocket.name,
-            'size': pocket.restaurant__count,
+            "pocket_uid": pocket.uid,
+            "name": pocket.name,
+            'size': pocket.restaurant__count
         } for pocket in pockets
     ]
     response['result'] = 'successful'

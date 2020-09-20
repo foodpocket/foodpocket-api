@@ -115,6 +115,7 @@ class Pocket (models.Model):
     owner = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=200)
     create_time = models.DateTimeField(default=timezone.now)
+    last_use_time = models.DateTimeField(null=True, blank=True)
     status = models.IntegerField(choices=Status.choices, default=Status.ACTIVE)
     note = models.CharField(max_length=1000, default="", blank=True)
 
@@ -147,6 +148,12 @@ class Pocket (models.Model):
 
         self.name = newName
         return True, ""
+
+    def brief(self) -> dict():
+        return {
+            "pocket_uid": self.uid,
+            "name": self.name,
+        }
 
 
 class Restaurant (models.Model):
