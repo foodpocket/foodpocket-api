@@ -496,7 +496,7 @@ class AccountApiTestCase(TestCase):
         data = {
             'username': 'hello',
             'password': 'helloworld_and_tester',
-            'email': 'tester@test.com',
+            'email': 'hello@test.com',
         }
         res = self.c.post('/api/rest/registerAccount/', data)
 
@@ -512,9 +512,9 @@ class AccountApiTestCase(TestCase):
         self.assertTrue(check_password(data['password'], user.password))
         self.assertEqual(user.email, data['email'])
 
-    def test_registry_invalid_username(self):
+    def test_registry_filter(self):
         """
-            Error test for registerAccount api with invalid username
+            Test for registerAccount api with invalid username and invalid email
 
             @target: registerAccount
         """
@@ -522,40 +522,59 @@ class AccountApiTestCase(TestCase):
         data = {
             'username': 'hello',
             'password': 'helloworld_and_tester',
-            'email': 'tester@test.com',
+            'email': 'hello@test.com',
         }
 
-        # TEST1
+        # TEST1: name with quote
         data['username'] = "xyz\"\'"
+        data['email'] = "email1@email.com"
         res = self.c.post('/api/rest/registerAccount/', data)
         self.assertEqual(400, res.status_code)
         self.assertEqual(accountCount, Account.objects.all().count())
 
-        # TEST2
+        # TEST2: name with space
         data['username'] = "xyz "
+        data['email'] = "email2@email.com"
         res = self.c.post('/api/rest/registerAccount/', data)
         self.assertEqual(400, res.status_code)
         self.assertEqual(accountCount, Account.objects.all().count())
 
-        # TEST3
+        # TEST3: name with special char
         data['username'] = "!@#xyz"
+        data['email'] = "email3@email.com"
         res = self.c.post('/api/rest/registerAccount/', data)
         self.assertEqual(400, res.status_code)
         self.assertEqual(accountCount, Account.objects.all().count())
 
-        # TEST4
+        # TEST4: number started name
         data['username'] = "123xyz"
+        data['email'] = "email4@email.com"
         res = self.c.post('/api/rest/registerAccount/', data)
         self.assertEqual(200, res.status_code)
         self.assertEqual(accountCount + 1, Account.objects.all().count())
         accountCount += 1
 
-        # TEST5
+        # TEST5: complex name
         data['username'] = "xyzXYZsdX123"
+        data['email'] = "email5@email.com"
         res = self.c.post('/api/rest/registerAccount/', data)
         self.assertEqual(200, res.status_code)
         self.assertEqual(accountCount + 1, Account.objects.all().count())
         accountCount += 1
+
+        # TEST6: username conflict
+        data['username'] = "xyzXYZsdX123"
+        data['email'] = "email6@email.com"
+        res = self.c.post('/api/rest/registerAccount/', data)
+        self.assertEqual(409, res.status_code)
+        self.assertEqual(accountCount, Account.objects.all().count())
+
+        # TEST7: email conflict
+        data['username'] = "abc"
+        data['email'] = "email5@email.com"
+        res = self.c.post('/api/rest/registerAccount/', data)
+        self.assertEqual(409, res.status_code)
+        self.assertEqual(accountCount, Account.objects.all().count())
 
     def test_login_account(self):
         """
