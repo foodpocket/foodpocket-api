@@ -29,16 +29,26 @@ def registerAccount(request):
         return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
     # preprocess parameters
-
     username, ok, errorMsg = Account.preprocessUsername(username)
+    if not ok:
+        return HttpResponse('Invalid request;' + errorMsg, status=400)
+
+    ok, errorMsg = Account.validateEmail(email)
     if not ok:
         return HttpResponse('Invalid request;' + errorMsg, status=400)
 
     password = make_password(password)  # one-way hash + salt
 
-    ok, errorMsg = Account.validateEmail(email)
-    if not ok:
-        return HttpResponse('Invalid request;' + errorMsg, status=400)
+    # validate parameters
+    if Account.objects.filter(username=username).count() > 0:
+        response['result'] = '409'
+        response['message'] = 'Username has been already registered by others'
+        return JsonResponse(response, status=409)
+
+    if Account.objects.filter(email=email).count() > 0:
+        response['result'] = '409'
+        response['message'] = 'Email has been already registered by others'
+        return JsonResponse(response, status=409)
 
     # create Account
     account = Account(
@@ -48,6 +58,8 @@ def registerAccount(request):
         status='active',  # TODO: before validate the email address, this should be inactive
     )
     account.save()
+
+    account.initAccount()
 
     response['result'] = 'successful'
     return JsonResponse(response)
@@ -96,6 +108,9 @@ def loginAccount(request):
         response['data'] = {
             'token': token,
         }
+
+        user.last_login = timezone.now()
+        user.save()
     else:
         response['result'] = 'login failed'
 

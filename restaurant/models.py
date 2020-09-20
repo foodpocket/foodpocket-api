@@ -29,6 +29,15 @@ class Account (models.Model):
     def __str__(self):
         return self.username
 
+    def initAccount(self):
+        """
+            initialize account configs and resources
+            including:
+            1. create a empty pocket
+        """
+        mypocket = Pocket(owner=self, name="My Pocket")
+        mypocket.save()
+
     @staticmethod
     def preprocessUsername(username: str) -> (str, bool, str):
         """
@@ -55,6 +64,7 @@ class Account (models.Model):
 
         return name, True, ""
 
+    @staticmethod
     def validateEmail(email: str) -> (bool, str):
         """
             validate email inputed by user
