@@ -24,6 +24,7 @@ class RestaurantApiTestCase(TestCase):
             email=tester_data['email'],
         )
         self.tester.save()
+        self.tester.initAccount()
 
         # create token
         self.token = TokenSystem.generate_token()
@@ -32,11 +33,7 @@ class RestaurantApiTestCase(TestCase):
             expire_time=timezone.now() + timezone.timedelta(days=1)
         )
 
-        self.myPocket = Pocket(
-            owner=self.tester,
-            name='my pocket',
-        )
-        self.myPocket.save()
+        self.myPocket = self.tester.pocket_set.first()
 
         self.myRest = Restaurant(
             owner=self.tester,
@@ -99,6 +96,15 @@ class RestaurantApiTestCase(TestCase):
         }
         res = self.c.post('/api/rest/removePocket/', data)
 
+        # TEST1: remove last one pocket
+        self.assertEqual(403, res.status_code)
+
+        # TEST2: basic remove pocket, remove one of two pockets
+        self.tester.pocket_set.create(
+            name='2nd pocket',
+        )
+
+        res = self.c.post('/api/rest/removePocket/', data)
         # test status code
         self.assertEqual(200, res.status_code)
 
@@ -463,6 +469,7 @@ class AccountApiTestCase(TestCase):
             email=tester_data['email'],
         )
         self.tester.save()
+        self.tester.initAccount()
 
         # create token
         self.token = TokenSystem.generate_token()
