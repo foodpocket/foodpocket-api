@@ -112,9 +112,9 @@ class Pocket (models.Model):
         return self.name
 
     def editStatus(self, newStatusLabel: str) -> (bool, str):
-        # cannot change status once a restaurant is deleted
+        # cannot change status once a pocket is deleted
         if self.status == self.Status.DELETED:
-            return False, "Cannot edit status for deleted restaurant"
+            return False, "Cannot edit status for deleted pocket"
 
         try:
             newStatus = self.Status[newStatusLabel].value

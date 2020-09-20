@@ -187,7 +187,7 @@ def getRestaurantList(request):
 def getVisitRecords(request):
     """
         [GET] Get all visit records visited by a user
-        must: user_token
+        must: user_token, pocket_uid
     """
     response = {'result': '', 'data': ''}
     if request.method != 'GET':
@@ -196,6 +196,7 @@ def getVisitRecords(request):
     # collect parameters
     try:
         user_token = request.GET['user_token']
+        pocket_uid = request.GET['pocket_uid']
     except (KeyError, ValueError):
         return HttpResponse('Invalid request; read document for correct parameters', status=400)
 
@@ -206,8 +207,13 @@ def getVisitRecords(request):
     except TokenSystem.DoesNotExist:
         return HttpResponse('Unauthorized, please login', status=401)
 
+    try:
+        pocket = Pocket.objects.get(uid=pocket_uid, owner=user)
+    except Pocket.DoesNotExist:
+        return HttpResponse('Failed, Pocket not found', status=404)
+
     records = VisitRecord.objects.select_related('restaurant') \
-        .filter(owner=user) \
+        .filter(owner=user, restaurant__pocket=pocket) \
         .exclude(status=VisitRecord.Status.DELETED) \
         .order_by('-visit_date', '-create_time')
 
