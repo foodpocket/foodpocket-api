@@ -155,6 +155,17 @@ class Pocket (models.Model):
             "name": self.name,
         }
 
+    def remove(self):
+        """
+            fake remove a pocket and all relavant restaurants and visit records
+        """
+        self.status = Pocket.Status.DELETED
+        self.save()
+
+        # remove restaurants
+        for restaurant in self.restaurant_set.exclude(status=Restaurant.Status.DELETED):
+            restaurant.remove()
+
 
 class Restaurant (models.Model):
 
@@ -252,6 +263,17 @@ class Restaurant (models.Model):
 
         return True, ""
 
+    def remove(self):
+        """
+            fake remove a restaurant and all relavant visit records
+        """
+        self.status = Restaurant.Status.DELETED
+        self.save()
+
+        # remove visit records
+        for record in self.visitrecord_set.exclude(status=VisitRecord.Status.DELETED):
+            record.remove()
+
 
 class VisitRecord (models.Model):
 
@@ -269,3 +291,10 @@ class VisitRecord (models.Model):
 
     def __str__(self):
         return str(self.owner) + '/' + str(self.restaurant) + '/' + str(self.visit_date)
+
+    def remove(self):
+        """
+            fake remove a visit record
+        """
+        self.status = VisitRecord.Status.DELETED
+        self.save()

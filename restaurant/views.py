@@ -233,7 +233,8 @@ def getVisitRecords(request):
         return HttpResponse('Unauthorized, please login', status=401)
 
     try:
-        pocket = Pocket.objects.get(uid=pocket_uid, owner=user)
+        pocket = Pocket.objects.exclude(status=Pocket.Status.DELETED) \
+            .get(uid=pocket_uid, owner=user)
     except Pocket.DoesNotExist:
         return HttpResponse('Failed, Pocket not found', status=404)
 
@@ -437,7 +438,8 @@ def newRestaurant(request):
         return HttpResponse('Unauthorized, please login', status=401)
 
     try:
-        pocket = Pocket.objects.get(uid=pocket_uid, owner=user)
+        pocket = Pocket.objects.exclude(status=Pocket.Status.DELETED) \
+            .get(uid=pocket_uid, owner=user)
     except Pocket.DoesNotExist:
         return HttpResponse('Failed, Pocket not found', status=404)
 
@@ -684,7 +686,8 @@ def editPocket(request):
         return HttpResponse('Unauthorized, please login', status=401)
 
     try:
-        pocket = Pocket.objects.get(uid=pocket_uid, owner=user)
+        pocket = Pocket.objects.exclude(status=Pocket.Status.DELETED) \
+            .get(uid=pocket_uid, owner=user)
     except Pocket.DoesNotExist:
         return HttpResponse('Failed, Pocket not found', status=404)
 
@@ -737,7 +740,8 @@ def removePocket(request):
         return HttpResponse('Unauthorized, please login', status=401)
 
     try:
-        pocket = Pocket.objects.get(uid=pocket_uid, owner=user)
+        pocket = Pocket.objects.exclude(status=Pocket.Status.DELETED) \
+            .get(uid=pocket_uid, owner=user)
     except Pocket.DoesNotExist:
         return HttpResponse('Failed, Pocket not found', status=404)
 
@@ -747,9 +751,10 @@ def removePocket(request):
         response['message'] = 'Forbidden; One user must have at least one pocket'
         return JsonResponse(response, status=403)
 
-    # fake remove restaurant
-    pocket.status = Pocket.Status.DELETED
-    pocket.save()
+    # fake remove pocket
+    pocket.remove()
+
+    # remove all relavant
 
     response['result'] = 'successful'
 
