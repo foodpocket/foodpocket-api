@@ -42,13 +42,13 @@ class Account (models.Model):
 
         # check length
         if len(username) > 64:
-            return None, False, "Username length exceed 64 charactors"
+            return None, False, "Username length exceed 64 characters"
 
         # check chars, only allow a-zA-Z0-9
         validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321"
         for char in username:
             if char not in validChars:
-                return None, False, "Username contains invalid charactor(s)"
+                return None, False, "Username contains invalid character(s)"
 
         # transfer all chars to lowercase
         name = str.lower(username)
