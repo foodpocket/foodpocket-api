@@ -106,7 +106,7 @@ def loginAccount(request):
         )
 
         # fetch userdata (configs)
-        last_pocket = user.pocket_set.order_by(
+        last_pocket = user.pocket_set.exclude(status=Pocket.Status.DELETED).order_by(
             '-last_use_time', '-create_time').first()
 
         response['result'] = 'successful'
