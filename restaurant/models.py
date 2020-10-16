@@ -4,7 +4,7 @@ from django.db.models import Max
 import uuid
 import random
 import string
-from datetime import date
+from datetime import date, timedelta
 from django.utils.translation import gettext_lazy as _
 import re
 from random import randrange
@@ -181,15 +181,25 @@ class Pocket (models.Model):
             .exclude(status=Restaurant.Status.DELETED) \
             .exclude(hide_until__gt=date.today()) \
             .order_by('last_visit', 'create_time')
-        recommandList = []
 
+        recommandList = []
         randThreshold = 50  # 50/100
+        # rule: only recommand a restaurant visited less than 5 times in past 30 days
+        visitLimitIn30Days = 5
+        # rule: only recommand a restaurant visited less than 2 times in past 7 days
+        visitLimitIn7Days = 2
         for rest in visibleList:
-            if rest.status == Restaurant.Status.RANDOM:
-                if randrange(1, 100) > randThreshold:
+            records = rest.getVisitRecords()
+            if records.filter(visit_date__gt=date.today() - timedelta(days=30)).count() < visitLimitIn30Days \
+                    and records.filter(visit_date__gt=date.today() - timedelta(days=7)).count() < visitLimitIn7Days:
+
+                if rest.status == Restaurant.Status.ACTIVE:
+                    # rule: always recommand an ACTIVE restaurant
                     recommandList.append(rest)
-            else:
-                recommandList.append(rest)
+                elif rest.status == Restaurant.Status.RANDOM:
+                    # rule: use random to decide whether recommand a RANDOM restaurant
+                    if randrange(1, 100) > randThreshold:
+                        recommandList.append(rest)
 
         return recommandList
 
