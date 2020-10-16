@@ -746,7 +746,7 @@ def removePocket(request):
         return HttpResponse('Failed, Pocket not found', status=404)
 
     # conditioning
-    if user.pocket_set.count() <= 1:
+    if user.pocket_set.exclude(status=Pocket.Status.DELETED).count() <= 1:
         response['result'] = '403'
         response['message'] = 'Forbidden; One user must have at least one pocket'
         return JsonResponse(response, status=403)

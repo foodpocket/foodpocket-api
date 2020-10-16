@@ -100,20 +100,29 @@ class RestaurantApiTestCase(TestCase):
         self.assertEqual(403, res.status_code)
 
         # TEST2: basic remove pocket, remove one of two pockets
+        # add a new pocket
         self.tester.pocket_set.create(
             name='2nd pocket',
         )
 
+        # remove one pocket
         res = self.c.post('/api/rest/removePocket/', data)
-        # test status code
         self.assertEqual(200, res.status_code)
 
-        # check whether the name has updated in database
+        # check whether the pocket has been deleted in database
         self.assertEqual(
             Pocket.objects.get(owner=self.tester,
                                uid=data['pocket_uid']).status,
             Pocket.Status.DELETED
         )
+
+        # try to remove the last one pocket (should fail)
+        data = {
+            'user_token': self.token,
+            'pocket_uid': self.tester.pocket_set.get(name='2nd pocket').uid,
+        }
+        res = self.c.post('/api/rest/removePocket/', data)
+        self.assertEqual(403, res.status_code)
 
     def test_add_new_restaurant(self):
         """
