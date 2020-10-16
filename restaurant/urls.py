@@ -13,6 +13,7 @@ urlpatterns = [
     path('removePocket/', views.removePocket, name='removePocket'),
 
     # Restaurant API
+    path('getRecommandList/', views.getRecommandList, name='getRecommandList'),
     path('getRestaurantList/', views.getRestaurantList, name='getRestaurantList'),
     path('newRestaurant/', views.newRestaurant, name='newRestaurant'),
     path('editRestaurant/', views.editRestaurant, name='editRestaurant'),

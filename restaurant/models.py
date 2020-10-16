@@ -1,11 +1,13 @@
 from django.db import models
 from django.utils import timezone
+from django.db.models import Max
 import uuid
 import random
 import string
 from datetime import date
 from django.utils.translation import gettext_lazy as _
 import re
+from random import randrange
 
 
 # Create your models here.
@@ -169,6 +171,28 @@ class Pocket (models.Model):
     def getRestaurants(self):
         return self.restaurant_set.exclude(status=Restaurant.Status.DELETED)
 
+    def getVisitRecords(self):
+        return VisitRecord.objects.select_related('restaurant') \
+            .filter(restaurant__pocket=self).exclude(status=VisitRecord.Status.DELETED) \
+            .order_by('-visit_date', '-create_time')
+
+    def getRecommandList(self):
+        visibleList = self.restaurant_set \
+            .exclude(status=Restaurant.Status.DELETED) \
+            .exclude(hide_until__gt=date.today()) \
+            .order_by('last_visit', 'create_time')
+        recommandList = []
+
+        randThreshold = 50  # 50/100
+        for rest in visibleList:
+            if rest.status == Restaurant.Status.RANDOM:
+                if randrange(1, 100) > randThreshold:
+                    recommandList.append(rest)
+            else:
+                recommandList.append(rest)
+
+        return recommandList
+
 
 class Restaurant (models.Model):
 
@@ -187,6 +211,17 @@ class Restaurant (models.Model):
         # user can never see this restaurant in restaurant list (even in search)
         DELETED = 999, _('DELETED')
 
+        @staticmethod
+        def strToStatusCode(statusString: str) -> int:
+            if statusString == "ACTIVE":
+                return Restaurant.Status.ACTIVE
+            elif statusString == "DELETED":
+                return Restaurant.Status.DELETED
+            elif statusString == "RANDOM":
+                return Restaurant.Status.RANDOM
+            else:  # default
+                return Restaurant.Status.RANDOM
+
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     owner = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True)
     pocket = models.ForeignKey(Pocket, on_delete=models.SET_NULL, null=True)
@@ -195,6 +230,7 @@ class Restaurant (models.Model):
     latitude = models.FloatField(default=0.0)
     address = models.CharField(max_length=200, default="", blank=True)
     create_time = models.DateTimeField(default=timezone.now)
+    last_visit = models.DateField(null=True, blank=True)
     status = models.IntegerField(choices=Status.choices, default=Status.RANDOM)
     hide_until = models.DateField(default=date.today)  # check this with status
     note = models.CharField(max_length=1000, default="", blank=True)
@@ -208,16 +244,6 @@ class Restaurant (models.Model):
             return self.Status.HIDE.label
         else:
             return self.Status(self.status).label
-
-    def getStatusByString(statusString: str) -> int:
-        if statusString == "ACTIVE":
-            return Restaurant.Status.ACTIVE
-        elif statusString == "DELETED":
-            return Restaurant.Status.DELETED
-        elif statusString == "RANDOM":
-            return Restaurant.Status.RANDOM
-        else:  # default
-            return Restaurant.Status.RANDOM
 
     def editStatus(self, newStatusLabel: str) -> (bool, str):
         # cannot change status once a restaurant is deleted
@@ -277,6 +303,40 @@ class Restaurant (models.Model):
         for record in self.visitrecord_set.exclude(status=VisitRecord.Status.DELETED):
             record.remove()
 
+    def updateLastVisit(self):
+        self.last_visit = self.getVisitRecords() \
+            .aggregate(Max('visit_date'))['visit_date__max']
+        self.save()
+
+    def addVisitRecord(self, visit_date, score):
+        self.visitrecord_set.create(
+            owner=self.owner,
+            visit_date=visit_date,
+            score=score,
+        )
+
+        # update last_visit
+        self.updateLastVisit()
+
+    def getVisitRecords(self):
+        return self.visitrecord_set.exclude(status=VisitRecord.Status.DELETED)
+
+    def brief(self):
+        last_update = self.create_time
+        if self.last_visit and self.last_visit > self.create_time.date():
+            last_update = self.last_visit
+
+        return {
+            'restaurant_uid': self.uid,
+            'restaurant_name': self.name,
+            'visit_count': self.getVisitRecords().count(),
+            'last_visit': self.last_visit if self.last_visit else "",
+            'last_update': last_update,
+            'status': self.getStatusLabel(),
+            'hide_until': self.hide_until,
+            'note': self.note,
+        }
+
 
 class VisitRecord (models.Model):
 
@@ -301,3 +361,11 @@ class VisitRecord (models.Model):
         """
         self.status = VisitRecord.Status.DELETED
         self.save()
+
+        self.restaurant.updateLastVisit()
+
+    def edit(self, visit_date):
+        self.visit_date = visit_date
+        self.save()
+
+        self.restaurant.updateLastVisit()

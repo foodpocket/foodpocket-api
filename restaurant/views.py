@@ -123,6 +123,46 @@ def loginAccount(request):
     return JsonResponse(response)
 
 
+def getRecommandList(request):
+    """
+        [GET] Get recommand list
+        must: user_token, pocket_uid
+    """
+    response = {'result': '', 'data': ''}
+    if request.method != 'GET':
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
+
+    # collect parameters
+    try:
+        user_token = request.GET['user_token']
+        pocket_uid = request.GET['pocket_uid']
+    except (KeyError, ValueError):
+        return HttpResponse('Invalid request; read document for correct parameters', status=400)
+
+    # query
+    try:
+        user = TokenSystem.objects.get(
+            token=user_token, expire_time__gte=timezone.now()).owner
+    except TokenSystem.DoesNotExist:
+        return HttpResponse('Unauthorized, please login', status=401)
+
+    try:
+        pocket = Pocket.objects.exclude(status=Pocket.Status.DELETED) \
+            .get(uid=pocket_uid, owner=user)
+
+        # update last use time
+        pocket.last_use_time = timezone.now()
+        pocket.save()
+    except Pocket.DoesNotExist:
+        return HttpResponse('Failed, Pocket not found', status=404)
+
+    recommandList = [rest.brief() for rest in pocket.getRecommandList()]
+
+    response['data'] = recommandList
+    response['result'] = 'successful'
+    return JsonResponse(response)
+
+
 def getRestaurantList(request):
     """
         [GET] Get all restaurants (in last visited + last updated order) and visit records visited by a user
@@ -300,14 +340,10 @@ def newVisit(request):
     except Restaurant.DoesNotExist:
         return HttpResponse('Failed, restaurant not found', status=404)
 
-    # create record
-    restaurant.visitrecord_set.create(
-        owner=user,
-        visit_date=visit_date,
-        score=score,
-    )
-    response['result'] = 'successful'
+    # create record belonging to a restaurant
+    restaurant.addVisitRecord(visit_date, score)
 
+    response['result'] = 'successful'
     return JsonResponse(response)
 
 
@@ -352,9 +388,8 @@ def editVisitRecord(request):
     except VisitRecord.DoesNotExist:
         return HttpResponse('Failed, Visit Record not found', status=404)
 
-    # create record
-    record.visit_date = visit_date
-    record.save()
+    # edit record
+    record.edit(visit_date)
 
     response['result'] = 'successful'
 
@@ -392,8 +427,7 @@ def removeVisitRecord(request):
         return HttpResponse('Failed, Visit Record not found', status=404)
 
     # fake remove record
-    record.status = VisitRecord.Status.DELETED
-    record.save()
+    record.remove()
 
     response['result'] = 'successful'
 
