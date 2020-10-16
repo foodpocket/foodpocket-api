@@ -595,7 +595,7 @@ def getPocketList(request):
     except TokenSystem.DoesNotExist:
         return HttpResponse('Unauthorized, please login', status=401)
 
-    pockets = Pocket.objects.annotate(Count('restaurant')).filter(owner=user) \
+    pockets = Pocket.objects.filter(owner=user) \
         .exclude(status=Pocket.Status.DELETED) \
         .order_by('create_time')
 
@@ -603,7 +603,7 @@ def getPocketList(request):
         {
             "pocket_uid": pocket.uid,
             "name": pocket.name,
-            'size': pocket.restaurant__count
+            'size': pocket.getRestaurants().count()
         } for pocket in pockets
     ]
     response['result'] = 'successful'

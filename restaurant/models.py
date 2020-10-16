@@ -166,6 +166,9 @@ class Pocket (models.Model):
         for restaurant in self.restaurant_set.exclude(status=Restaurant.Status.DELETED):
             restaurant.remove()
 
+    def getRestaurants(self):
+        return self.restaurant_set.exclude(status=Restaurant.Status.DELETED)
+
 
 class Restaurant (models.Model):
 
