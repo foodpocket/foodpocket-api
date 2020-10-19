@@ -14,15 +14,15 @@ class TokenSystemAdmin(admin.ModelAdmin):
 
 
 class PocketAdmin(admin.ModelAdmin):
-    list_display = ['owner', 'name', 'status']
+    list_display = ['name', 'owner', 'status']
 
 
 class RestaurantAdmin(admin.ModelAdmin):
-    list_display = ['name', 'uid', 'owner', 'status']
+    list_display = ['name', 'pocket', 'owner', 'uid', 'status']
 
 
 class VisitRecordAdmin(admin.ModelAdmin):
-    list_display = ['owner', 'restaurant', 'visit_date', 'status']
+    list_display = ['restaurant', 'owner', 'visit_date', 'status']
 
 
 admin.site.register(Account, AccountAdmin)

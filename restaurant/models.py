@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.db.models import Max
+from django.db.models import Max, F
 import uuid
 import random
 import string
@@ -180,7 +180,7 @@ class Pocket (models.Model):
         visibleList = self.restaurant_set \
             .exclude(status=Restaurant.Status.DELETED) \
             .exclude(hide_until__gt=date.today()) \
-            .order_by('last_visit', 'create_time')
+            .order_by(F('last_visit').asc(nulls_first=True), 'create_time')
 
         recommendList = []
         randThreshold = 50  # 50/100
