@@ -176,17 +176,17 @@ class Pocket (models.Model):
             .filter(restaurant__pocket=self).exclude(status=VisitRecord.Status.DELETED) \
             .order_by('-visit_date', '-create_time')
 
-    def getRecommandList(self):
+    def getRecommendList(self):
         visibleList = self.restaurant_set \
             .exclude(status=Restaurant.Status.DELETED) \
             .exclude(hide_until__gt=date.today()) \
             .order_by('last_visit', 'create_time')
 
-        recommandList = []
+        recommendList = []
         randThreshold = 50  # 50/100
-        # rule: only recommand a restaurant visited less than 5 times in past 30 days
+        # rule: only recommend a restaurant visited less than 5 times in past 30 days
         visitLimitIn30Days = 5
-        # rule: only recommand a restaurant visited less than 2 times in past 7 days
+        # rule: only recommend a restaurant visited less than 2 times in past 7 days
         visitLimitIn7Days = 2
         for rest in visibleList:
             records = rest.getVisitRecords()
@@ -194,14 +194,14 @@ class Pocket (models.Model):
                     and records.filter(visit_date__gt=date.today() - timedelta(days=7)).count() < visitLimitIn7Days:
 
                 if rest.status == Restaurant.Status.ACTIVE:
-                    # rule: always recommand an ACTIVE restaurant
-                    recommandList.append(rest)
+                    # rule: always recommend an ACTIVE restaurant
+                    recommendList.append(rest)
                 elif rest.status == Restaurant.Status.RANDOM:
-                    # rule: use random to decide whether recommand a RANDOM restaurant
+                    # rule: use random to decide whether recommend a RANDOM restaurant
                     if randrange(1, 100) > randThreshold:
-                        recommandList.append(rest)
+                        recommendList.append(rest)
 
-        return recommandList
+        return recommendList
 
 
 class Restaurant (models.Model):

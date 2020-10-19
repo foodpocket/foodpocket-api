@@ -123,9 +123,9 @@ def loginAccount(request):
     return JsonResponse(response)
 
 
-def getRecommandList(request):
+def getRecommendList(request):
     """
-        [GET] Get recommand list
+        [GET] Get recommend list
         must: user_token, pocket_uid
     """
     response = {'result': '', 'data': ''}
@@ -156,9 +156,9 @@ def getRecommandList(request):
     except Pocket.DoesNotExist:
         return HttpResponse('Failed, Pocket not found', status=404)
 
-    recommandList = [rest.brief() for rest in pocket.getRecommandList()]
+    recommendList = [rest.brief() for rest in pocket.getRecommendList()]
 
-    response['data'] = recommandList
+    response['data'] = recommendList
     response['result'] = 'successful'
     return JsonResponse(response)
 
@@ -204,7 +204,7 @@ def getRestaurantList(request):
         restaurantMap[restaurant.uid] = {
             'restaurant_uid': restaurant.uid,
             'restaurant_name': restaurant.name,
-            'visited': 0,
+            'visit_count': 0,
             'visit_dates': [],
             'last_update': restaurant.create_time,
             'status': restaurant.getStatusLabel(),
@@ -222,7 +222,7 @@ def getRestaurantList(request):
         if record.restaurant.uid not in restaurantMap:
             continue
 
-        restaurantMap[record.restaurant.uid]['visited'] += 1
+        restaurantMap[record.restaurant.uid]['visit_count'] += 1
         restaurantMap[record.restaurant.uid]['visit_dates'].append(
             record.visit_date)
 
