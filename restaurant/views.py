@@ -384,7 +384,7 @@ def editVisitRecord(request):
         return HttpResponse('Unauthorized, please login', status=401)
 
     try:
-        record = VisitRecord.objects.get(uid=visitrecord_uid, user=user)
+        record = VisitRecord.objects.get(uid=visitrecord_uid, owner=user)
     except VisitRecord.DoesNotExist:
         return HttpResponse('Failed, Visit Record not found', status=404)
 

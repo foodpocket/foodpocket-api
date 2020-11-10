@@ -424,6 +424,25 @@ class RestaurantApiTestCase(TestCase):
             restaurant=self.myRest, owner=self.tester)
         self.assertEqual(len(vrList), self.visitCount)
 
+    def test_edit_visit(self):
+        """
+            @brief: Basic functional test for editVisitRecord api
+            @target: editVisitRecord
+        """
+        data = {
+            'visitrecord_uid': self.myVisit.uid,
+            'user_token': self.token,
+            'visit_date': '2020-01-01',
+        }
+        res = self.c.post('/api/rest/editVisitRecord/', data)
+
+        # test status code
+        self.assertEqual(200, res.status_code)
+
+        # test whether the api correctly added record to database
+        self.assertEqual(data['visit_date'],
+                         str(VisitRecord.objects.get(uid=data['visitrecord_uid']).visit_date))
+
     def test_visit_error(self):
         """
             @brief: Error testing for newVisit api
