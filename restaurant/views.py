@@ -102,7 +102,7 @@ def loginAccount(request):
         token = TokenSystem.generate_token()
         user.tokensystem_set.create(
             token=token,
-            expire_time=timezone.now() + timezone.timedelta(days=1)
+            expire_time=timezone.now() + timezone.timedelta(days=30)
         )
 
         # fetch userdata (configs)
